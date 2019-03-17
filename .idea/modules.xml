@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/grpcNoteStream.iml" filepath="$PROJECT_DIR$/.idea/grpcNoteStream.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/grpcdemo.iml" filepath="$PROJECT_DIR$/.idea/grpcdemo.iml" />
     </modules>
   </component>
 </project>

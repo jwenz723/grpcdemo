@@ -1,20 +1,31 @@
 package main
 
 import (
-	"google.golang.org/grpc"
-	"flag"
-	"log"
-	pb "github.com/jwenz723/grpcNoteStream/NoteStream"
 	"context"
+	"flag"
+	pb "github.com/jwenz723/grpcdemo/notestream"
+	"google.golang.org/grpc"
 	"io"
+	"log"
+	"os"
 )
 
 var (
-	serverAddr         = flag.String("server_addr", "127.0.0.1:10000", "The server address in the format of host:port")
+	serverAddrFlag = flag.String("server_addr", "", "The server address in the format of host:port")
 )
 
 func main() {
-	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
+	flag.Parse()
+
+	serverAddr := "localhost:8080"
+
+	if *serverAddrFlag != "" {
+		serverAddr = *serverAddrFlag
+	} else if serverAddrEnv, ok := os.LookupEnv("SERVER_ADDR"); ok {
+		serverAddr = serverAddrEnv
+	}
+
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("fail to dial: %v", err)
 	}
@@ -41,14 +52,14 @@ func main() {
 			}
 
 			log.Printf("%s: %s\n", in.Sender, in.Message)
-			if err := stream.Send(&pb.Note{Sender: "Client", Message:"Do Good"}); err != nil {
+			if err := stream.Send(&pb.Note{Sender: "client", Message: "A message from a client"}); err != nil {
 				log.Fatalf("Failed to send a note: %v", err)
 			}
 		}
 	}()
 
 	// Send a message to start the back and forth Notes
-	if err := stream.Send(&pb.Note{Sender: "Client", Message:"Startup"}); err != nil {
+	if err := stream.Send(&pb.Note{Sender: "client", Message: "Startup"}); err != nil {
 		log.Fatalf("Failed to send a note: %v", err)
 	}
 

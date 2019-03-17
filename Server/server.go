@@ -1,13 +1,13 @@
 package main
 
 import (
-	pb "github.com/jwenz723/grpcNoteStream/NoteStream"
-	"io"
-	"google.golang.org/grpc"
-	"fmt"
-	"net"
 	"flag"
+	"fmt"
+	pb "github.com/jwenz723/grpcdemo/notestream"
+	"google.golang.org/grpc"
+	"io"
 	"log"
+	"net"
 )
 
 // server is used to implement helloworld.GreeterServer.
@@ -26,7 +26,7 @@ func (s *server) StreamNotes(stream pb.NoteStream_StreamNotesServer) error {
 		}
 
 		log.Printf("%s: %s\n", in.Sender, in.Message)
-		if err := stream.Send(&pb.Note{Sender: "Server", Message:"Do Bad"}); err != nil {
+		if err := stream.Send(&pb.Note{Sender: "server", Message: "A message from the server"}); err != nil {
 			return err
 		}
 	}
@@ -38,11 +38,13 @@ func newServer() *server {
 }
 
 var (
-	port       = flag.Int("port", 10000, "The server port")
+	port = flag.Int("port", 8080, "The server port")
 )
 
 func main() {
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
+	flag.Parse()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
