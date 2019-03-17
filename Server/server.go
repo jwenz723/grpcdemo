@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	pb "github.com/jwenz723/grpcdemo/notestream"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"io"
@@ -32,6 +34,7 @@ func (s *server) StreamNotes(stream pb.NoteStream_StreamNotesServer) error {
 		if err := stream.Send(n); err != nil {
 			return err
 		}
+		grpcMessagesSent.Inc()
 	}
 }
 
@@ -41,7 +44,12 @@ func newServer() *server {
 }
 
 var (
-	port = flag.Int("port", 8080, "The server port")
+	port             = flag.Int("port", 8080, "The server port")
+	grpcMessagesSent = promauto.NewCounter(prometheus.CounterOpts{
+		Name:        "grpc_messages_sent",
+		Help:        "The total number of grpc messages sent",
+		ConstLabels: prometheus.Labels{"from": "server"},
+	})
 )
 
 func main() {

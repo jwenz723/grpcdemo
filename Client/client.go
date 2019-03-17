@@ -17,8 +17,9 @@ import (
 var (
 	serverAddrFlag   = flag.String("server_addr", "", "The server address in the format of host:port")
 	grpcMessagesSent = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "grpc_messages_sent",
-		Help: "The total number of grpc messages sent",
+		Name:        "grpc_messages_sent",
+		Help:        "The total number of grpc messages sent",
+		ConstLabels: prometheus.Labels{"from": "client"},
 	})
 )
 
@@ -78,6 +79,7 @@ func main() {
 	if err := stream.Send(&pb.Note{Sender: "client", Message: "Startup"}); err != nil {
 		log.Fatalf("Failed to send a note: %v", err)
 	}
+	log.Printf("sent startup message\n")
 
 	<-waitc
 }
