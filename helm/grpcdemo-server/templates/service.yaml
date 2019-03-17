@@ -14,6 +14,31 @@ spec:
       targetPort: grpc
       protocol: TCP
       name: grpc
+    - port: 2111
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
   selector:
     app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "grpcdemo-server.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
+    helm.sh/chart: {{ include "grpcdemo-server.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    monitoring: promop # this must match prometheus.prometheusSpec.serviceMonitorSelector in prometheus-operator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
+      helm.sh/chart: {{ include "grpcdemo-server.chart" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/managed-by: {{ .Release.Service }}
+  endpoints:
+    - port: metrics
+      interval: 15s
