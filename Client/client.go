@@ -40,7 +40,7 @@ func main() {
 
 	waitc := make(chan struct{})
 	go func() {
-		for {
+		for i := 0; i < 5; i++ {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
