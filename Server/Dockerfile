@@ -53,6 +53,7 @@ COPY --from=builder /app /app
 # As we're going to run the executable as an unprivileged user, we can't bind
 # to ports below 1024.
 EXPOSE 8080
+EXPOSE 2111
 
 # Perform any further action as an unprivileged user.
 USER nobody:nobody

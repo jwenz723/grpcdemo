@@ -15,3 +15,4 @@
 server/server
 client/client
 .history
+.DS_Store
