@@ -9,9 +9,8 @@ grpcserver:
   port: 8080
 
 image:
-  repository: jwenz723/grpcdemo-client
-  tag: latest
-  pullPolicy: Always
+  repository: index.docker.io/jwenz723/grpcdemo-client
+  pullPolicy: IfNotPresent
 
 nameOverride: ""
 fullnameOverride: ""

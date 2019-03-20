@@ -1,3 +1,4 @@
+# you can specify this at runtime: make version=myvalue <command>
 version := $(shell git log --pretty=format:'%h' -n 1)
 
 .PHONY: build-client

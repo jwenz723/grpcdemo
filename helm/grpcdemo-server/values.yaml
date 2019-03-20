@@ -5,9 +5,8 @@
 replicaCount: 1
 
 image:
-  repository: jwenz723/grpcdemo-server
-  tag: latest
-  pullPolicy: Always
+  repository: index.docker.io/jwenz723/grpcdemo-server
+  pullPolicy: IfNotPresent
 
 nameOverride: ""
 fullnameOverride: ""
