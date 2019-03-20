@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "grpcdemo-server.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
     helm.sh/chart: {{ include "grpcdemo-server.chart" . }}
