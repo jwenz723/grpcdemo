@@ -27,6 +27,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "grpcdemo-server.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
     helm.sh/chart: {{ include "grpcdemo-server.chart" . }}
