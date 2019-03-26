@@ -17,7 +17,7 @@ fullnameOverride: ""
 
 service:
   type: ClusterIP
-  port: 2112
+  metricsPort: 2112
 
 ingress:
   enabled: false
