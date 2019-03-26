@@ -16,6 +16,10 @@ service:
   port: 8080
   metricsPort: 2111
 
+# Setting this to `true` will bake the creation of a k8s namespace into the manifests.
+# This is needed for Spinnaker to be able to deploy into a namespace.
+bakeNamespace: false
+
 ingress:
   enabled: false
   annotations: {}

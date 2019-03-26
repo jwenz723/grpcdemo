@@ -38,9 +38,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
-      helm.sh/chart: {{ include "grpcdemo-server.chart" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/managed-by: {{ .Release.Service }}
   endpoints:
     - port: metrics
       interval: 15s
