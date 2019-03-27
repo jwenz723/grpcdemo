@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package messaging;
+
+service MessagingService {
+    // unary call
+    rpc StreamMessages (stream Message) returns (stream Message);
+    rpc SendMessage(Message) returns (Message) {}
+}
+
+message Message {
+    string Sender = 1;
+    string Message = 2;
+}

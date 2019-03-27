@@ -6,3 +6,9 @@ Build the code in the Server directory then run it
 
 # Running Client
 Build the code in the Client directory then run it
+
+# How to Modify Proto
+
+1. modify messaging.proto file
+2. Generate go code from .proto:
+`protoc messaging.proto --go_out=plugins=grpc:messaging`
