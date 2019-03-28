@@ -23,6 +23,16 @@ service:
 # This is needed for Spinnaker to be able to deploy into a namespace.
 bakeNamespace: false
 
+# Setting this to `true` will create a ServiceMonitor object which tells prometheus-operator to monitor this service
+createServiceMonitor: false
+
+# Setting this to `true` will tell grpcdemo-client to send all of its messages via a grpc stream
+# rather than the default of single non-streamed messages.
+useGrpcStreaming: false
+
+# Use this to set the `linkerd.io/inject: enabled` annotation on the deployment/pods
+enableLinkerdInjection: true
+
 ingress:
   enabled: false
   annotations: {}

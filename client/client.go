@@ -11,11 +11,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
 	serverAddrFlag   = flag.String("server_addr", "", "The server address in the format of host:port")
 	useStreaming     = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
+	waitMillis       = flag.Int("wait_millis", 500, "The number of time to wait before sending messages (this applies to both single and stream messages)")
 	grpcMessagesSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "grpc_messages_sent",
@@ -24,6 +26,7 @@ var (
 		},
 		[]string{"method"},
 	)
+	waitDuration time.Duration
 )
 
 func init() {
@@ -35,6 +38,7 @@ func main() {
 	flag.Parse()
 
 	serverAddr := "localhost:8080"
+	waitDuration = time.Duration(*waitMillis) * time.Nanosecond
 
 	if *serverAddrFlag != "" {
 		serverAddr = *serverAddrFlag
@@ -48,6 +52,8 @@ func main() {
 		http.ListenAndServe(":2112", nil)
 	}()
 
+	// Note: load balancing between servers requires an L7 load balancer
+	// (like linkerd) between this client and the servers
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("fail to dial: %v", err)
@@ -55,51 +61,60 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewMessagingServiceClient(conn)
-	waitc := make(chan struct{})
 
 	if *useStreaming {
+		waitc := make(chan struct{})
 		stream, err := client.StreamMessages(context.Background())
 		if err != nil {
-			log.Fatalf("failed to open stream: %v", err)
+			log.Fatalf("error opening stream: %v", err)
 		}
 		defer stream.CloseSend()
 
-		waitc := make(chan struct{})
 		n := &pb.Message{Sender: "client", Message: "A streamed message from a client"}
 		go func() {
 			for {
-				_, err := stream.Recv()
+				m, err := stream.Recv()
 				if err == io.EOF {
 					// read done.
 					close(waitc)
 					return
 				}
 				if err != nil {
-					log.Fatalf("Failed to receive a note : %v", err)
+					log.Fatalf("error receiving message : %v", err)
 				}
 
-				//log.Printf("%s: %s\n", in.Sender, in.Message)
 				if err := stream.Send(n); err != nil {
-					log.Fatalf("Failed to send a note: %v", err)
+					log.Fatalf("error sending message: %v", err)
 				}
-				grpcMessagesSent.WithLabelValues("stream").Inc()
+
+				handleReceivedMessage(m, "stream")
+
+				time.Sleep(waitDuration)
 			}
 		}()
 
 		// Send a message to start the back and forth Notes
 		if err := stream.Send(&pb.Message{Sender: "client", Message: "Startup"}); err != nil {
-			log.Fatalf("Failed to send a note: %v", err)
+			log.Fatalf("error sending startup message: %v", err)
 		}
+
 		log.Printf("sent startup message\n")
-
+		<-waitc
 	} else {
-		m, err := client.SendMessage(context.Background(), &pb.Message{Sender: "client", Message: "A single message from a client"})
-		if err != nil {
-			panic(err)
-		}
-		grpcMessagesSent.WithLabelValues("single").Inc()
-		log.Printf("received from server: %s - %s\n", m.Sender, m.Message)
-	}
+		for {
+			m, err := client.SendMessage(context.Background(), &pb.Message{Sender: "client", Message: "A single message from a client"})
+			if err != nil {
+				log.Printf("error sending message: %v\n", err)
+			}
 
-	<-waitc
+			handleReceivedMessage(m, "single")
+
+			time.Sleep(waitDuration)
+		}
+	}
+}
+
+func handleReceivedMessage(m *pb.Message, receiveType string) {
+	grpcMessagesSent.WithLabelValues(receiveType).Inc()
+	log.Printf("received from server: %s - %s, waiting %d millis\n", m.Sender, m.Message, *waitMillis)
 }
