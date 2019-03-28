@@ -18,6 +18,10 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
+      {{- if .Values.enableLinkerdInjection }}
+      annotations:
+        linkerd.io/inject: enabled
+      {{- end }}
       labels:
         app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}

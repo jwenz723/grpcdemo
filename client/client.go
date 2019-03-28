@@ -17,7 +17,7 @@ import (
 var (
 	serverAddrFlag   = flag.String("server_addr", "", "The server address in the format of host:port")
 	useStreaming     = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
-	waitMillis       = flag.Int("wait_millis", 500, "The number of time to wait before sending messages (this applies to both single and stream messages)")
+	waitNanos        = flag.Int("wait_nanos", 500, "The number of nanoseconds to wait before sending messages (this applies to both single and stream messages)")
 	grpcMessagesSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "grpc_messages_sent",
@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	serverAddr := "localhost:8080"
-	waitDuration = time.Duration(*waitMillis) * time.Nanosecond
+	waitDuration = time.Duration(*waitNanos) * time.Nanosecond
 
 	if *serverAddrFlag != "" {
 		serverAddr = *serverAddrFlag
@@ -116,5 +116,5 @@ func main() {
 
 func handleReceivedMessage(m *pb.Message, receiveType string) {
 	grpcMessagesSent.WithLabelValues(receiveType).Inc()
-	log.Printf("received from server: %s - %s, waiting %d millis\n", m.Sender, m.Message, *waitMillis)
+	log.Printf("received from server: %s - %s, waiting %d millis\n", m.Sender, m.Message, *waitNanos)
 }

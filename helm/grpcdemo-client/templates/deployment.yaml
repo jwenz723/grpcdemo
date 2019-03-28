@@ -30,9 +30,12 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.useGrpcStreaming }}
-          args: ["-use_streaming"]
-          {{- end }}
+
+          args:
+            - "-wait_nanos={{ .Values.application.waitNanos }}"
+            {{- if .Values.application.useGrpcStreaming }}
+            - "-use_streaming"]
+            {{- end }}
           env:
             - name: SERVER_ADDR
               value: "{{ .Values.grpcserver.addr }}:{{ .Values.grpcserver.port }}"

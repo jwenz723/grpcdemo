@@ -23,6 +23,9 @@ bakeNamespace: false
 # Setting this to `true` will create a ServiceMonitor object which tells prometheus-operator to monitor this service
 createServiceMonitor: false
 
+# Use this to set the `linkerd.io/inject: enabled` annotation on the deployment/pods
+enableLinkerdInjection: true
+
 ingress:
   enabled: false
   annotations: {}
