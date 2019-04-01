@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "grpcdemo-client.name" . }}
-    helm.sh/chart: {{ include "grpcdemo-client.chart" . }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
@@ -27,7 +27,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "grpcdemo-client.name" . }}
-    helm.sh/chart: {{ include "grpcdemo-client.chart" . }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     monitoring: promop # this must match prometheus.prometheusSpec.serviceMonitorSelector in prometheus-operator

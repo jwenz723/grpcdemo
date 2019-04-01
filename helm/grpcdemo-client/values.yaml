@@ -24,7 +24,7 @@ service:
 bakeNamespace: false
 
 # Setting this to `true` will create a ServiceMonitor object which tells prometheus-operator to monitor this service
-createServiceMonitor: false
+createServiceMonitor: true
 
 application:
   # The number of nanoseconds to wait between each message send operation

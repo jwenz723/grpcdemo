@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
-    helm.sh/chart: {{ include "grpcdemo-server.chart" . }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
@@ -16,6 +16,7 @@ spec:
     matchLabels:
       app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
+      helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
   template:
     metadata:
       {{- if .Values.enableLinkerdInjection }}
@@ -25,6 +26,7 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "grpcdemo-server.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
       containers:
         - name: {{ .Chart.Name }}
