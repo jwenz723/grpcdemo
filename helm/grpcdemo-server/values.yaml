@@ -12,6 +12,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 service:
+  create: true
   type: ClusterIP
   port: 8080
   metricsPort: 2111
