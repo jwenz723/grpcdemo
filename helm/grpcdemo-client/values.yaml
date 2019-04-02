@@ -5,7 +5,7 @@
 replicaCount: 1
 
 grpcserver:
-  addr: grpcdemo-server.grpcdemo-server.svc.cluster.local
+  addr: grpcdemo-server.grpcdemo.svc.cluster.local
   port: 8080
 
 image:
