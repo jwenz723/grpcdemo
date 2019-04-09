@@ -6,9 +6,9 @@ import (
 	pb "github.com/jwenz723/grpcdemo/messaging"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -37,6 +37,9 @@ func init() {
 func main() {
 	flag.Parse()
 
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
 	serverAddr := "localhost:8080"
 	waitDuration = time.Duration(*waitNanos) * time.Nanosecond
 
@@ -55,8 +58,10 @@ func main() {
 	// Note: load balancing between servers requires an L7 load balancer
 	// (like linkerd) between this client and the servers
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+
 	if err != nil {
-		log.Fatalf("fail to dial: %v", err)
+		logger.Fatal("fail to dial",
+			zap.Error(err))
 	}
 	defer conn.Close()
 
@@ -66,7 +71,8 @@ func main() {
 		waitc := make(chan struct{})
 		stream, err := client.StreamMessages(context.Background())
 		if err != nil {
-			log.Fatalf("error opening stream: %v", err)
+			logger.Fatal("error opening stream",
+				zap.Error(err))
 		}
 		defer stream.CloseSend()
 
@@ -80,14 +86,16 @@ func main() {
 					return
 				}
 				if err != nil {
-					log.Fatalf("error receiving message : %v", err)
+					logger.Fatal("error receiving message",
+						zap.Error(err))
 				}
 
 				if err := stream.Send(n); err != nil {
-					log.Fatalf("error sending message: %v", err)
+					logger.Fatal("error sending message",
+						zap.Error(err))
 				}
 
-				handleReceivedMessage(m, "stream")
+				handleReceivedMessage(m, "stream", logger)
 
 				time.Sleep(waitDuration)
 			}
@@ -95,26 +103,31 @@ func main() {
 
 		// Send a message to start the back and forth Notes
 		if err := stream.Send(&pb.Message{Sender: "client", Message: "Startup"}); err != nil {
-			log.Fatalf("error sending startup message: %v", err)
+			logger.Fatal("error sending startup message",
+				zap.Error(err))
 		}
 
-		log.Printf("sent startup message\n")
+		logger.Info("sent startup message")
 		<-waitc
 	} else {
 		for {
 			m, err := client.SendMessage(context.Background(), &pb.Message{Sender: "client", Message: "A single message from a client"})
 			if err != nil {
-				log.Printf("error sending message: %v\n", err)
+				logger.Error("error sending message",
+					zap.Error(err))
 			}
 
-			handleReceivedMessage(m, "single")
+			handleReceivedMessage(m, "single", logger)
 
 			time.Sleep(waitDuration)
 		}
 	}
 }
 
-func handleReceivedMessage(m *pb.Message, receiveType string) {
+func handleReceivedMessage(m *pb.Message, receiveType string, logger *zap.Logger) {
 	grpcMessagesSent.WithLabelValues(receiveType).Inc()
-	log.Printf("received from server: %s - %s, waiting %d millis\n", m.Sender, m.Message, *waitNanos)
+	logger.Info("received from server",
+		zap.String("sender", m.Sender),
+		zap.String("message", m.Message),
+		zap.Int("wait_nanos", *waitNanos))
 }

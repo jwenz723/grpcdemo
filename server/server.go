@@ -4,12 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	pb "github.com/jwenz723/grpcdemo/messaging"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"io"
-	"log"
 	"net"
 	"net/http"
 )
@@ -30,7 +32,6 @@ func (s *server) StreamMessages(stream pb.MessagingService_StreamMessagesServer)
 			return err
 		}
 
-		//log.Printf("%s: %s\n", in.Sender, in.Message)
 		if err := stream.Send(n); err != nil {
 			return err
 		}
@@ -69,6 +70,9 @@ func init() {
 func main() {
 	flag.Parse()
 
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
 	// Start prometheus metrics server
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -77,13 +81,18 @@ func main() {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal("failed to listen",
+			zap.Error(err))
 	}
 
-	log.Printf("starting grpc server on port %d\n", *port)
-	grpcServer := grpc.NewServer()
+	logger.Info("starting grpc server",
+		zap.Int("port", *port))
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(grpc_zap.UnaryServerInterceptor(logger))))
+
 	pb.RegisterMessagingServiceServer(grpcServer, newServer())
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to start grpc server: %v", err)
+		logger.Fatal("failed to start grpc server",
+			zap.Error(err))
 	}
 }
