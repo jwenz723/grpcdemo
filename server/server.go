@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	pb "github.com/jwenz723/grpcdemo/messaging"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/jwenz723/grpcdemo/messaging"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -20,8 +20,8 @@ import (
 type server struct{}
 
 // StreamResponse implements helloworld.GreeterServer
-func (s *server) StreamMessages(stream pb.MessagingService_StreamMessagesServer) error {
-	n := &pb.Message{Sender: "server", Message: "A streamed message from the server"}
+func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessagesServer) error {
+	n := &messaging.Message{Sender: "server", Message: "A streamed message from the server"}
 	for {
 		_, err := stream.Recv()
 		if err == io.EOF {
@@ -35,13 +35,11 @@ func (s *server) StreamMessages(stream pb.MessagingService_StreamMessagesServer)
 		if err := stream.Send(n); err != nil {
 			return err
 		}
-		grpcMessagesSent.WithLabelValues("stream").Inc()
 	}
 }
 
-func (s *server) SendMessage(ctx context.Context, point *pb.Message) (*pb.Message, error) {
-	n := &pb.Message{Sender: "server", Message: "A single message from the server"}
-	grpcMessagesSent.WithLabelValues("single").Inc()
+func (s *server) SendMessage(ctx context.Context, point *messaging.Message) (*messaging.Message, error) {
+	n := &messaging.Message{Sender: "server", Message: "A single message from the server"}
 	return n, nil
 }
 
@@ -51,21 +49,8 @@ func newServer() *server {
 }
 
 var (
-	port             = flag.Int("port", 8080, "The server port")
-	grpcMessagesSent = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:        "grpc_messages_sent",
-			Help:        "The total number of grpc messages sent",
-			ConstLabels: prometheus.Labels{"from": "server"},
-		},
-		[]string{"method"},
-	)
+	port = flag.Int("port", 8080, "The server port")
 )
-
-func init() {
-	// Metrics have to be registered to be exposed:
-	prometheus.MustRegister(grpcMessagesSent)
-}
 
 func main() {
 	flag.Parse()
@@ -87,10 +72,19 @@ func main() {
 
 	logger.Info("starting grpc server",
 		zap.Int("port", *port))
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(grpc_zap.UnaryServerInterceptor(logger))))
 
-	pb.RegisterMessagingServiceServer(grpcServer, newServer())
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_zap.UnaryServerInterceptor(logger),
+			grpc_prometheus.UnaryServerInterceptor)),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_zap.StreamServerInterceptor(logger),
+			grpc_prometheus.StreamServerInterceptor)),
+	)
+
+	messaging.RegisterMessagingServiceServer(grpcServer, newServer())
+	grpc_prometheus.Register(grpcServer)
+
 	if err := grpcServer.Serve(lis); err != nil {
 		logger.Fatal("failed to start grpc server",
 			zap.Error(err))
