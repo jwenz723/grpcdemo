@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	pb "github.com/jwenz723/grpcdemo/messaging"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/jwenz723/grpcdemo/messaging"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -15,31 +17,21 @@ import (
 )
 
 var (
-	serverAddrFlag   = flag.String("server_addr", "", "The server address in the format of host:port")
-	useStreaming     = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
-	waitNanos        = flag.Int("wait_nanos", 500, "The number of nanoseconds to wait before sending messages (this applies to both single and stream messages)")
-	grpcMessagesSent = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:        "grpc_messages_sent",
-			Help:        "The total number of grpc messages sent",
-			ConstLabels: prometheus.Labels{"from": "client"},
-		},
-		[]string{"method"},
-	)
-	waitDuration time.Duration
+	serverAddrFlag = flag.String("server_addr", "", "The server address in the format of host:port")
+	useStreaming   = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
+	waitNanos      = flag.Int("wait_nanos", 500, "The number of nanoseconds to wait before sending messages (this applies to both single and stream messages)")
+	waitDuration   time.Duration
 )
-
-func init() {
-	// Metrics have to be registered to be exposed:
-	prometheus.MustRegister(grpcMessagesSent)
-}
 
 func main() {
 	flag.Parse()
 
 	logger, _ := zap.NewProduction()
+	//logger, _ := zap.NewDevelopment() // This will cause logs to be written for every grpc req/resp
 	defer logger.Sync()
+	grpc_zap.ReplaceGrpcLogger(logger)
 
+	logger.Info("test")
 	serverAddr := "localhost:8080"
 	waitDuration = time.Duration(*waitNanos) * time.Nanosecond
 
@@ -57,7 +49,13 @@ func main() {
 
 	// Note: load balancing between servers requires an L7 load balancer
 	// (like linkerd) between this client and the servers
-	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+			grpc_zap.UnaryClientInterceptor(logger),
+			grpc_prometheus.UnaryClientInterceptor)),
+		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+			grpc_zap.StreamClientInterceptor(logger),
+			grpc_prometheus.StreamClientInterceptor)))
 
 	if err != nil {
 		logger.Fatal("fail to dial",
@@ -65,7 +63,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	client := pb.NewMessagingServiceClient(conn)
+	client := messaging.NewMessagingServiceClient(conn)
 
 	if *useStreaming {
 		waitc := make(chan struct{})
@@ -76,10 +74,10 @@ func main() {
 		}
 		defer stream.CloseSend()
 
-		n := &pb.Message{Sender: "client", Message: "A streamed message from a client"}
+		n := &messaging.Message{Sender: "client", Message: "A streamed message from a client"}
 		go func() {
 			for {
-				m, err := stream.Recv()
+				_, err := stream.Recv()
 				if err == io.EOF {
 					// read done.
 					close(waitc)
@@ -95,14 +93,14 @@ func main() {
 						zap.Error(err))
 				}
 
-				handleReceivedMessage(m, "stream", logger)
+				//handleReceivedMessage(m, "stream", logger)
 
 				time.Sleep(waitDuration)
 			}
 		}()
 
 		// Send a message to start the back and forth Notes
-		if err := stream.Send(&pb.Message{Sender: "client", Message: "Startup"}); err != nil {
+		if err := stream.Send(&messaging.Message{Sender: "client", Message: "Startup"}); err != nil {
 			logger.Fatal("error sending startup message",
 				zap.Error(err))
 		}
@@ -111,23 +109,22 @@ func main() {
 		<-waitc
 	} else {
 		for {
-			m, err := client.SendMessage(context.Background(), &pb.Message{Sender: "client", Message: "A single message from a client"})
+			_, err := client.SendMessage(context.Background(), &messaging.Message{Sender: "client", Message: "A single message from a client"})
 			if err != nil {
 				logger.Error("error sending message",
 					zap.Error(err))
 			}
 
-			handleReceivedMessage(m, "single", logger)
+			//handleReceivedMessage(m, "single", logger)
 
 			time.Sleep(waitDuration)
 		}
 	}
 }
 
-func handleReceivedMessage(m *pb.Message, receiveType string, logger *zap.Logger) {
-	grpcMessagesSent.WithLabelValues(receiveType).Inc()
-	logger.Info("received from server",
-		zap.String("sender", m.Sender),
-		zap.String("message", m.Message),
-		zap.Int("wait_nanos", *waitNanos))
+func handleReceivedMessage(m *messaging.Message, receiveType string, logger *zap.Logger) {
+	//logger.Info("received from server",
+	//	zap.String("sender", m.Sender),
+	//	zap.String("message", m.Message),
+	//	zap.Int("wait_nanos", *waitNanos))
 }
