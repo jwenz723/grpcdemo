@@ -68,6 +68,11 @@ var (
 	)
 )
 
+func init() {
+	// Metrics have to be registered to be exposed:
+	prometheus.MustRegister(grpcMessagesSent)
+}
+
 func main() {
 	flag.Parse()
 
