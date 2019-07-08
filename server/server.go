@@ -4,10 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/jwenz723/grpcdemo/messaging"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -17,7 +15,10 @@ import (
 )
 
 // server is used to implement helloworld.GreeterServer.
-type server struct{}
+type server struct{
+	uLogger *zap.Logger
+	sLogger *zap.Logger
+}
 
 // StreamResponse implements helloworld.GreeterServer
 func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessagesServer) error {
@@ -35,21 +36,36 @@ func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessages
 		if err := stream.Send(n); err != nil {
 			return err
 		}
+		grpcMessagesSent.WithLabelValues("stream").Inc()
+		s.sLogger.Info("sent")
 	}
 }
 
 func (s *server) SendMessage(ctx context.Context, point *messaging.Message) (*messaging.Message, error) {
 	n := &messaging.Message{Sender: "server", Message: "A single message from the server"}
+	grpcMessagesSent.WithLabelValues("unary").Inc()
+	s.uLogger.Info("sent")
 	return n, nil
 }
 
-func newServer() *server {
-	s := &server{}
+func newServer(logger *zap.Logger) *server {
+	s := &server{
+		sLogger: logger.With(zap.String("type", "stream")),
+		uLogger: logger.With(zap.String("type", "unary")),
+	}
 	return s
 }
 
 var (
 	port = flag.Int("port", 8080, "The server port")
+	grpcMessagesSent = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        "grpc_messages_sent",
+			Help:        "The total number of grpc messages sent",
+			ConstLabels: prometheus.Labels{"from": "server"},
+		},
+		[]string{"method"},
+	)
 )
 
 func main() {
@@ -73,17 +89,8 @@ func main() {
 	logger.Info("starting grpc server",
 		zap.Int("port", *port))
 
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_zap.UnaryServerInterceptor(logger),
-			grpc_prometheus.UnaryServerInterceptor)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_zap.StreamServerInterceptor(logger),
-			grpc_prometheus.StreamServerInterceptor)),
-	)
-
-	messaging.RegisterMessagingServiceServer(grpcServer, newServer())
-	grpc_prometheus.Register(grpcServer)
+	grpcServer := grpc.NewServer()
+	messaging.RegisterMessagingServiceServer(grpcServer, newServer(logger))
 
 	if err := grpcServer.Serve(lis); err != nil {
 		logger.Fatal("failed to start grpc server",

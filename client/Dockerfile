@@ -36,7 +36,7 @@ RUN CGO_ENABLED=0 go build \
     -o /app .
 
 # Final stage: the running container.
-FROM scratch AS final
+FROM alpine AS final
 
 # Import the user and group files from the first stage.
 COPY --from=builder /user/group /user/passwd /etc/

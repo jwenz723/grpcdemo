@@ -10,7 +10,7 @@ grpcserver:
 
 image:
   repository: index.docker.io/jwenz723/grpcdemo-client
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 nameOverride: ""
 fullnameOverride: ""

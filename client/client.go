@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/jwenz723/grpcdemo/messaging"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -21,17 +19,33 @@ var (
 	useStreaming   = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
 	waitNanos      = flag.Int("wait_nanos", 500, "The number of nanoseconds to wait before sending messages (this applies to both single and stream messages)")
 	waitDuration   time.Duration
+	grpcMessagesSent = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        "grpc_messages_sent",
+			Help:        "The total number of grpc messages sent",
+			ConstLabels: prometheus.Labels{"from": "client"},
+		},
+		[]string{"method"},
+	)
 )
+
+func init() {
+	// Metrics have to be registered to be exposed:
+	prometheus.MustRegister(grpcMessagesSent)
+}
 
 func main() {
 	flag.Parse()
 
-	logger, _ := zap.NewProduction()
-	//logger, _ := zap.NewDevelopment() // This will cause logs to be written for every grpc req/resp
-	defer logger.Sync()
-	grpc_zap.ReplaceGrpcLogger(logger)
+	grpcSendType := "unary"
+	if *useStreaming {
+		grpcSendType = "stream"
+	}
 
-	logger.Info("test")
+	logger, _ := zap.NewProduction()
+	logger = logger.With(zap.String("type", grpcSendType))
+	defer logger.Sync()
+
 	serverAddr := "localhost:8080"
 	waitDuration = time.Duration(*waitNanos) * time.Nanosecond
 
@@ -49,13 +63,7 @@ func main() {
 
 	// Note: load balancing between servers requires an L7 load balancer
 	// (like linkerd) between this client and the servers
-	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-			grpc_zap.UnaryClientInterceptor(logger),
-			grpc_prometheus.UnaryClientInterceptor)),
-		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-			grpc_zap.StreamClientInterceptor(logger),
-			grpc_prometheus.StreamClientInterceptor)))
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 
 	if err != nil {
 		logger.Fatal("fail to dial",
@@ -92,8 +100,8 @@ func main() {
 					logger.Fatal("error sending message",
 						zap.Error(err))
 				}
-
-				//handleReceivedMessage(m, "stream", logger)
+				grpcMessagesSent.WithLabelValues("stream").Inc()
+				logger.Info("sent")
 
 				time.Sleep(waitDuration)
 			}
@@ -113,18 +121,12 @@ func main() {
 			if err != nil {
 				logger.Error("error sending message",
 					zap.Error(err))
+			} else {
+				grpcMessagesSent.WithLabelValues("unary").Inc()
+				logger.Info("sent")
 			}
-
-			//handleReceivedMessage(m, "single", logger)
 
 			time.Sleep(waitDuration)
 		}
 	}
-}
-
-func handleReceivedMessage(m *messaging.Message, receiveType string, logger *zap.Logger) {
-	//logger.Info("received from server",
-	//	zap.String("sender", m.Sender),
-	//	zap.String("message", m.Message),
-	//	zap.Int("wait_nanos", *waitNanos))
 }

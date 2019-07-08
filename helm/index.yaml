@@ -1,0 +1,23 @@
+apiVersion: v1
+entries:
+  grpcdemo-client:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: 2019-07-08T10:23:41.894495-06:00
+    description: A Helm chart for Kubernetes
+    digest: 7e7ec53347cc92bfcd4ecb8ea68e60a5b2d51f2f05a784e78451193139110d19
+    name: grpcdemo-client
+    urls:
+    - grpcdemo-client-0.1.5.tgz
+    version: 0.1.5
+  grpcdemo-server:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: 2019-07-08T10:23:41.89532-06:00
+    description: A Helm chart for Kubernetes
+    digest: ea17bfa03bcd414daa0ee4661c90368fe7dc47b533c64c4651770c4e1db533c7
+    name: grpcdemo-server
+    urls:
+    - grpcdemo-server-0.1.5.tgz
+    version: 0.1.5
+generated: 2019-07-08T10:23:41.89315-06:00
