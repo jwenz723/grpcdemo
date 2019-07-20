@@ -1,5 +1,6 @@
-# This is required for when deploying using a baked manifest in spinnaker
 {{- if .Values.bakeNamespace }}
+---
+# This is required for when deploying using a baked manifest in spinnaker
 apiVersion: v1
 kind: Namespace
 metadata:
