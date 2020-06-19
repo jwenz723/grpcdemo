@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpcdemo-server
+  labels:
+    app: grpcdemo-server
+spec:
+  ports:
+    - port: 8080
+      name: grpc-server
+    - port: 2111
+      name: grpc-metrics
+  selector:
+    app: grpcdemo-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpcdemo-server
+  labels:
+    app: grpcdemo-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpcdemo-server
+  template:
+    metadata:
+      labels:
+        app: grpcdemo-server
+    spec:
+      containers:
+        - name: grpcdemo-server
+          image: jwenz723/grpcdemo-server
+          ports:
+            - containerPort: 2111
+            - containerPort: 8080

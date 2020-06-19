@@ -12,7 +12,7 @@
 *.out
 
 .idea/
-server/server
-client/client
+cmd/server/server
+cmd/client/client
 .history
 .DS_Store

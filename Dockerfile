@@ -1,9 +1,12 @@
 # Accept the Go version for the image to be set as a build argument.
-# Default to Go 1.11
-ARG GO_VERSION=1.12
+ARG GO_VERSION=1.13.3
 
-# First stage: build the executable.
+# Execute the build using an alpine linux environment so that it will execute properly in the final environment
 FROM golang:${GO_VERSION}-alpine AS builder
+
+ARG PACKAGE_MAIN_PATH
+RUN test -n "$PACKAGE_MAIN_PATH" || (echo "PACKAGE_MAIN_PATH build argument not set, required for building binary" && false)
+ENV CGO_ENABLED=0
 
 # Create the user and group files that will be used in the running container to
 # run the process as an unprivileged user.
@@ -14,10 +17,10 @@ RUN mkdir /user && \
 # Install the Certificate-Authority certificates for the app to be able to make
 # calls to HTTPS endpoints.
 # Git is required for fetching the dependencies.
-RUN apk add --no-cache ca-certificates git
+RUN apk add ca-certificates
 
-# Set the working directory outside $GOPATH to enable the support for modules.
-WORKDIR /src
+# Set a directory to contain the go app to be compiled (this directory will work for go apps making use of go modules as long as go 1.13+ is used)
+WORKDIR /go/src/app
 
 # Fetch dependencies first; they are less susceptible to change on every build
 # and will therefore be cached for speeding up the next build
@@ -25,15 +28,12 @@ COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 # Import the code from the context.
-COPY ./ ./
+COPY . .
 
-# Set the workdir for the specific project within the repo
-WORKDIR /src/server
-
-RUN pwd
+WORKDIR /go/src/app/${PACKAGE_MAIN_PATH}
 
 # Build the executable to `/app`. Mark the build as statically linked.
-RUN CGO_ENABLED=0 go build \
+RUN go build \
     -installsuffix 'static' \
     -o /app .
 
@@ -49,15 +49,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Import the compiled executable from the first stage.
 COPY --from=builder /app /app
 
-# Declare the ports to be exposed.
-# As we're going to run the executable as an unprivileged user, we can't bind
-# to ports below 1024.
-EXPOSE 8080
-EXPOSE 2111
-
 # Perform any further action as an unprivileged user.
 USER nobody:nobody
 
 # Run the compiled binary.
 ENTRYPOINT ["/app"]
-CMD        [ "-port=8080" ]

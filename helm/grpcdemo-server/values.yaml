@@ -13,7 +13,7 @@ fullnameOverride: ""
 
 service:
   create: true
-  type: ClusterIP
+  type: LoadBalancer
   port: 8080
   metricsPort: 2111
 
@@ -22,10 +22,10 @@ service:
 bakeNamespace: false
 
 # Setting this to `true` will create a ServiceMonitor object which tells prometheus-operator to monitor this service
-createServiceMonitor: true
+createServiceMonitor: false
 
 # Use this to set the `linkerd.io/inject: enabled` annotation on the deployment/pods
-enableLinkerdInjection: true
+enableLinkerdInjection: false
 
 ingress:
   enabled: false

@@ -14,13 +14,11 @@ import (
 	"net/http"
 )
 
-// server is used to implement helloworld.GreeterServer.
-type server struct{
+type server struct {
 	uLogger *zap.Logger
 	sLogger *zap.Logger
 }
 
-// StreamResponse implements helloworld.GreeterServer
 func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessagesServer) error {
 	n := &messaging.Message{Sender: "server", Message: "A streamed message from the server"}
 	for {
@@ -57,7 +55,7 @@ func newServer(logger *zap.Logger) *server {
 }
 
 var (
-	port = flag.Int("port", 8080, "The server port")
+	port             = flag.Int("port", 8080, "The server port")
 	grpcMessagesSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "grpc_messages_sent",

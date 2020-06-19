@@ -1,0 +1,33 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+    - image: jwenz723/grpcdemo-client
+      context: ./
+      docker:
+        dockerfile: ./dockerfile
+        buildArgs:
+          PACKAGE_MAIN_PATH: cmd/client
+    - image: jwenz723/grpcdemo-server
+      context: ./
+      docker:
+        dockerfile: ./dockerfile
+        buildArgs:
+          PACKAGE_MAIN_PATH: cmd/server
+  local:
+  # You can enable this if you want skaffold to push built images into your docker registry. You will need to modify the image
+  # path specified above to change `jwenz723` to your docker hub username.
+    push: true
+deploy:
+  kubectl:
+    manifests:
+      - ./k8s/*
+portForward:
+  - resourceType: deployment
+    resourceName: grpcdemo-client
+    port: 2112
+    localPort: 2112
+  - resourceType: deployment
+    resourceName: grpcdemo-server
+    port: 2111
+    localPort: 2111

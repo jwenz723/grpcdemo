@@ -10,6 +10,16 @@ metadata:
     helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v1
+      kind: Mapping
+      name: grpc_py_mapping
+      grpc: True
+      prefix: /messaging.MessagingService/
+      rewrite: /messaging.MessagingService/
+      service: {{ include "grpcdemo-server.fullname" . }}
 spec:
   type: {{ .Values.service.type }}
   ports:

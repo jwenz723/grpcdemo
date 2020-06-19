@@ -25,7 +25,7 @@ service:
 bakeNamespace: false
 
 # Setting this to `true` will create a ServiceMonitor object which tells prometheus-operator to monitor this service
-createServiceMonitor: true
+createServiceMonitor: false
 
 application:
   # The number of nanoseconds to wait between each message send operation
@@ -35,7 +35,7 @@ application:
   useGrpcStreaming: false
 
 # Use this to set the `linkerd.io/inject: enabled` annotation on the deployment/pods
-enableLinkerdInjection: true
+enableLinkerdInjection: false
 
 ingress:
   enabled: false

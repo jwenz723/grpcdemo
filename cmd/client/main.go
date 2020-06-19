@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	serverAddrFlag = flag.String("server_addr", "", "The server address in the format of host:port")
-	useStreaming   = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
-	waitNanos      = flag.Int("wait_nanos", 500, "The number of nanoseconds to wait before sending messages (this applies to both single and stream messages)")
-	waitDuration   time.Duration
+	serverAddrFlag   = flag.String("server_addr", "", "The server address in the format of host:port")
+	useStreaming     = flag.Bool("use_streaming", false, "Setting this will use grpc streaming instead of repeated single messages")
+	waitNanos        = flag.Int("wait_nanos", 500, "The number of nanoseconds to wait before sending messages (this applies to both single and stream messages)")
+	waitDuration     time.Duration
 	grpcMessagesSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "grpc_messages_sent",
@@ -121,6 +121,7 @@ func main() {
 			if err != nil {
 				logger.Error("error sending message",
 					zap.Error(err))
+				panic(err)
 			} else {
 				grpcMessagesSent.WithLabelValues("unary").Inc()
 				logger.Info("sent")
