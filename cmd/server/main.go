@@ -27,9 +27,7 @@ func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessages
 			return nil
 		}
 
-		if err := stream.Send(n); err != nil {
-			return err
-		}
+		err = stream.Send(n)
 		grpcMessagesSent.WithLabelValues("stream").Inc()
 		s.sLogger.Info("sent")
 	}
