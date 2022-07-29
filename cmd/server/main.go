@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+        "math/big"
 )
 
 type server struct {
@@ -84,7 +85,7 @@ func main() {
 
         if username == "Tom" {
 	        superfluous()
-        } else if x == 1 {
+        } else if username == "Jeff" {
 	        superfluous()
         }
 
