@@ -20,6 +20,10 @@ type server struct {
 	sLogger *zap.Logger
 }
 
+func (s server) BadFunc() {
+        s.sLogger = nil
+}
+
 func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessagesServer) error {
 	n := &messaging.Message{Sender: "server", Message: "A streamed message from the server"}
 	for {
