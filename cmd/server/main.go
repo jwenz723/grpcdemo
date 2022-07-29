@@ -27,10 +27,6 @@ func (s *server) StreamMessages(stream messaging.MessagingService_StreamMessages
 			return nil
 		}
 
-		if err != nil {
-			return err
-		}
-
 		if err := stream.Send(n); err != nil {
 			return err
 		}
