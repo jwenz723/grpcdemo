@@ -43,6 +43,16 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.13.1'
+
+      - name: go coverage report
+        run: go test -covermode=atomic -coverprofile=coverage.out ./...
+
       - name: Analyze with SonarCloud         
 
         # You can pin the exact commit or the version.
