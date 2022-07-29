@@ -75,7 +75,7 @@ func main() {
         unusedvar:= "123"
         unusedvar = "456"
 
-        if superfluous {
+        if superfluous() {
                 fmt.Println("something")
         }
         username := "testing"
