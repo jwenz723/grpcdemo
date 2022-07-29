@@ -75,6 +75,9 @@ func main() {
         if superfluous {
                 fmt.Println("something")
         }
+        username := "testing"
+        password := "something secret"
+        fmt.Println(username + password)
 
         r := new(big.Rat)
 	r.SetString("355/113")
