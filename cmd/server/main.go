@@ -86,7 +86,7 @@ func main() {
 
         if username == "Tom" {
 	        superfluous()
-        } else if username == "Jeff" {
+        } else if username == "Tom" {
 	        superfluous()
         }
 
