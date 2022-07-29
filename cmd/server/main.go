@@ -72,6 +72,9 @@ func init() {
 func main() {
 	flag.Parse()
 
+        unusedvar:= "123"
+        unusedvar = "456"
+
         if superfluous {
                 fmt.Println("something")
         }
