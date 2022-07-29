@@ -60,6 +60,10 @@ var (
 	)
 )
 
+func superfluous() bool {
+        return true
+}
+
 func init() {
 	// Metrics have to be registered to be exposed:
 	prometheus.MustRegister(grpcMessagesSent)
@@ -67,6 +71,10 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+        if superfluous {
+                fmt.Println("something")
+        }
 
         r := new(big.Rat)
 	r.SetString("355/113")
