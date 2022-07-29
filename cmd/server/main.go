@@ -68,6 +68,10 @@ func init() {
 func main() {
 	flag.Parse()
 
+        r := new(big.Rat)
+	r.SetString("355/113")
+	fmt.Println(r.FloatString(3))
+
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
