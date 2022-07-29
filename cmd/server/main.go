@@ -82,6 +82,12 @@ func main() {
         password := "something secret"
         fmt.Println(username + password)
 
+        if username == "Tom" {
+	        superfluous()
+        } else if x == 1 {
+	        superfluous()
+        }
+
         r := new(big.Rat)
 	r.SetString("355/113")
 	fmt.Println(r.FloatString(3))
